@@ -3,11 +3,20 @@ package controllers
 import play.api.Play
 import play.api.libs.json.Json
 import play.api.mvc.{Action, Controller}
+import services.SlackService
+
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class SlackTestController extends Controller {
 
-  def test = Action {
-    NotImplemented
+  private val slackService = new SlackService
+
+  def test = Action.async {
+    slackService.call("api.test")(_ => Unit) map { _ match {
+        case Right(_) => Ok
+        case Left(error) => BadRequest(error)
+      }
+    }
   }
 
   def cred = Action {
@@ -15,7 +24,8 @@ class SlackTestController extends Controller {
     val json = Json.obj(
       "team" -> cfg.getString("slack.team"),
       "user" -> cfg.getString("slack.user"),
-      "token" -> cfg.getString("slack.token")
+      "token" -> cfg.getString("slack.token"),
+      "endpoint" -> cfg.getString("slack.endpoint")
     )
 
     Ok(json)
